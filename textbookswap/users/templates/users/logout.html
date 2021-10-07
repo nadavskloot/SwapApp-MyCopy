@@ -1,0 +1,15 @@
+{% extends 'tradeboard/base.html' %}
+{% load static %}
+
+
+{% block content %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'users/css/user.css' %}">
+<div class="centered-logout">
+    <div class = "arrange-as-column flex-justify-center" id="log-out-div">
+        <p class="logout-banner">You have been logged out!</p>
+        <a href="{% url 'login' %}" class="login-btn">Log In Again?</a>
+    </div>
+</div>
+{% endblock %}
+

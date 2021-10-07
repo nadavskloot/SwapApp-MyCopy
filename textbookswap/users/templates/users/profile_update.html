@@ -1,0 +1,86 @@
+{% extends "tradeboard/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% block content %}
+</div>
+    <link rel="stylesheet" type="text/css" href="{% static 'users/css/user.css' %}">
+    <div class= "spacer"></div>
+    <div class = "arrange-as-column flex-justify-center">
+        <div class="login-panel">
+            <form method="POST" name="profile-form" enctype="multipart/form-data"> 
+                {% csrf_token %}
+                <div class="login-error">
+                {{ u_form.non_field_errors }}
+                </div>
+                <div class = "arrange-as-column align-stretch">
+                    <p class = "profile-banner">Your Profile</p>
+                    <div class="input-div image-field">
+                        <label class = "field-label"  for="{{ p_form.image.id_for_label }}">Profile Pic</label>
+                        {{ p_form.image}}
+                        <label class = "image-upload-rep" for="{{ p_form.image.id_for_label }}" style="background-image:url('{{user.profile.image.url}}'); background-size:cover; background-position:center;">
+                            <img id="pre-img" src="{% static 'tradeboard/svg/plus-sign.svg' %}"/>
+                        </label>
+                        <div class="error">
+                            {{ p_form.image.errors }}
+                        </div>
+                    </div>
+                    <div class="arrange-as-row set-width">
+                        <div class = "input-div username-field">
+                            <label class = "field-label" for="{{ u_form.first_name.id_for_label }}">First name</label>
+                            {{ u_form.first_name }}
+                            <div class="error">
+                                {{ u_form.first_name.errors }}
+                            </div>
+                        </div>
+                        <div class="spacer2"></div>
+                        <div class = "input-div username-field">
+                            <label class = "field-label" for="{{ u_form.last_name.id_for_label }}">Last name</label>
+                            {{ u_form.last_name }}
+                            <div class="error">
+                                {{ u_form.last_name.errors }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class = "input-div username-field">
+                        <label class = "field-label" for="{{ u_form.username.id_for_label }}">Username</label>
+                        {{ u_form.username }}
+                        <div class="error">
+                            {{ u_form.email.errors }}
+                        </div>
+                    </div>
+                    <div class = "input-div password-field">
+                        <label class = "field-label" for="{{ u_form.password.id_for_label }}">Email</label>
+                        {{ u_form.email }}
+                        <div class="error">
+                            {{ u_form.email.errors }}
+                        </div>
+                    </div>
+                    <div class="arrange-as-row align-center">
+                        <a class="clear-btn" type="submit" href="{% url 'tradeboard-home' %}">Cancel</a>
+                        <button class="search-btn" type="submit">Update</button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+    <div class= "spacer"></div>
+        
+    <script type="text/javascript">
+        function upload_img(input) {
+            console.log("update-img-called")
+            console.log(input.files[0])
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    //$('#pre-img').attr('src', e.target.result);
+                    console.log('background-img: url("'+e.target.result+'");')
+                    $('.image-upload-rep').attr('style', "background-image:url('"+e.target.result+"'); background-size: cover; background-position: center;");
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+{% endblock content %}

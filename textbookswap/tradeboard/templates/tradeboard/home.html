@@ -1,0 +1,478 @@
+{% extends 'tradeboard/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class = "popup">
+
+    </div>
+    <div class = "spacer"></div>
+    <div class = "panels" style = "flex:1;">
+        <div class = "left-panel">
+            <div class = "profile-section">
+                <img class= "profile-pic" src = "{{user.profile.image.url}}"/>
+                <div class = "profile-info">
+                    <a href= "{% url 'profile' %}">
+                        <h2 class = "fl-users-name"> {{user.first_name}} {{user.last_name}}</h2>
+                    </a>
+                    <hr class="tab-divider" style="border-top: 2px solid #fff; align-self:stretch; margin: 4px 50px">
+                    <h2 class = "fl-users-name" style="margin-top: 0px;"> @{{user.username}}</h2>
+                    <div class="arrange-as-row" style="margin-top: 20px;">
+                        <a  href="{% url 'profile' %}" style="margin-right:20px;">
+                            <button class = "nav-btn" type="button" name="profile" >Profile</button>
+                        </a>
+                        <a  href="{% url 'logout' %}">
+                            <button class = "nav-btn" type="button" name="logout" >Logout</button>
+                        </a>
+                    </div>
+                </div>
+                
+            </div>
+            <div class = "instruction">
+                <h3> Welcome to our website!</h3>
+                <div class="arrange-as-row">
+                    <div class="vertical-accent-bar"></div>
+                    <p style="margin:0;"> You can search for books you want to buy, but we don't provide any transaction services. 
+                    <br> Therefore, in order to buy a book, you need to contact the seller directly by email.</p>    
+                </div>
+                <div class="arrange-as-row" style="margin-top:15px;">
+                    <div class="vertical-accent-bar"></div>
+                    <p style="margin:0;"> At it's current stage, our website was built with the safari and chrome browser in mind, so please remember to use those for better user experience.</p>    
+                </div>
+                <div class="arrange-as-row" style="margin-top:15px;">
+                    <div class="vertical-accent-bar"></div>
+                    <div class="arrange-as-column">
+                        <p style="margin:0;"> You can put up a book for sell by either going to your selling list tab or by clicking the button below</p>
+                        <button class = "nav-btn" type="button" name="sell" onclick="newPostForm()">Sell A Book</button>    
+                    </div>
+                </div>
+                
+
+            </div>
+        </div>
+        <div class = "mid-panel">
+            <div class = "tab-bar">
+                <div class= "arrange-as-row tab-row">
+                    <button class = "tab-btn active-tab" type="button" name="tradeboard">Trade Board</button>
+                    <button class = "tab-btn" type="button" name="bookmark">My Bookmarks</button>
+                    <button class = "tab-btn" type="button" name="sell-list">My Selling List </button>
+                </div>
+                <div class= "extra">
+                    <hr class="tab-divider">
+                    <div class= "arrange-as-row">
+                        <p class = "question">Do you have a book that you'd like to sell?</p>
+                        <button class = "sell-btn" onclick="newPostForm()">Sell A Book</button>
+                    </div>
+                </div>
+            </div>
+            <div class = "mid-panel-scroll">
+                
+            </div>
+        </div>
+
+        <div class = "right-panel">
+            <div class="search-filters-panel">
+                {% include "tradeboard/searchForm.html" %}
+            </div>
+            {% include "tradeboard/components/message_panel.html" %}
+        </div>
+    </div>
+    <div class = "spacer"></div>
+    <style>
+        .search-filters-panel{
+            width: 325px;
+            background-color: #ffffff;
+            box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex: 1;
+        }
+        .search-filters-panel.inactive .title-search~form{
+            display: none;
+        }
+    </style>
+    
+    <script type="text/javascript">
+        function inlargeImage(img){
+            console.log("img clicked")
+            console.log($('.popup')[0].getAttribute('class'))
+            $('.popup')[0].innerHTML = "<div style='width:100%; height:100%; background-color: #000000c9;'><img src='" + img.getAttribute('src')+ "' style='margin: 40px; object-fit:contain; width:90%; height:90%;'%><img src={% static 'tradeboard/svg/close.svg' %} style='position: absolute; top:20px; right:20px; width:30px; height:30px;' onclick='removePopUp()'></img></div>"
+            $('.popup').toggleClass('visible')
+        }
+        function togglePanelView(){
+            $(".message-panel").toggleClass("inactive")
+            $(".search-filters-panel").toggleClass("inactive")
+            console.log("togglePanelView fucntion being called")
+            console.log($(".search-filters-panel").length)
+        }
+        function tiptext(id){
+            $("#"+id)[0].classList.toggle("visible")
+        }
+
+        tabBtns = document.querySelectorAll(".tab-btn")
+        for(var i=0; i<tabBtns.length;i++){
+            tabBtns[i].onclick=function(){
+                if (this.name == "tradeboard"){
+                    loadTradeboard()
+                }
+                else if(this.name == "bookmark"){
+                    loadBookmarks()
+                }
+                else{
+                    loadSellList()
+                }
+            }
+        }
+
+        function switchTab(tab){
+            tabBtns = document.querySelectorAll(".tab-btn")
+            for(var i=0; i<tabBtns.length;i++){
+                if(tabBtns[i].name == tab){
+                    tabBtns[i].classList.toggle("active-tab", true)
+                }
+                else {
+                    tabBtns[i].classList.toggle("active-tab", false)
+                }
+            }
+            tabBar= document.querySelectorAll(".tab-bar")
+            if(tab == "sell-list"){
+                tabBar[0].classList.toggle("expanded", true)
+            }
+            else{
+                tabBar[0].classList.toggle("expanded", false)
+            }
+        }
+
+        {% comment %} 
+        https://stackoverflow.com/questions/6608095/preview-image-before-form-submit/6608265 
+        {% endcomment %}
+
+        function upload_img(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    $('.image-upload-rep').attr('style', "background-image:url('"+e.target.result+"'); background-size: cover; background-position: center;");
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function loadTradeboard(){
+            var frm = $('.search-filters');
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: frm.serialize(),
+                success: function (resp) {
+                    console.log('loadtrade board called')
+                    $('.mid-panel-scroll').html(resp.searchResults);
+                    $('.search-filters-panel').html(resp.form);
+                    switchTab("tradeboard");
+                    activate()
+                },
+                error: function(error) {
+                    console.log("error detected when loading tradeboard")
+                    console.log(error)
+                }
+            });
+        }
+
+        function loadBookmarks(){
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: {
+                    "action":"loadBookmarks"
+                },
+                success: function (resp) {
+                    $('.mid-panel-scroll').html(resp);
+                    switchTab("bookmark");
+                    activate()
+                },
+                error: function(error) {
+                    console.log("error detected when loading bookmarks")
+                    console.log(error)
+                }
+            });
+        }
+
+        function loadSellList(){
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: {
+                    "action":"loadSellList"
+                },
+                success: function (resp) {
+                    $('.mid-panel-scroll').html(resp);
+                    switchTab("sell-list");
+                    activate()
+                },
+                error: function(error) {
+                    console.log("error detected when loading selling list")
+                    console.log(error)
+                }
+            });
+        }
+
+        function activateExpand() {
+            expands = document.querySelectorAll("svg.expand")
+            for(var i=0; i<expands.length;i++){
+                expands[i].onclick=function(){
+                    max = document.getElementById("post-max-"+ this.id.substring(4)); 
+                    max.classList.toggle("show");
+                    this.classList.toggle("expanded");
+                }
+            }
+            texpands = document.querySelectorAll(".book-title")
+            for(var i=0; i<texpands.length;i++){
+                texpands[i].onclick=function(){
+                    max = document.getElementById("post-max-"+ this.id.substring(6)); 
+                    max.classList.toggle("show");
+                    exp = document.getElementById("exp-"+ this.id.substring(6));
+                    exp.classList.toggle("expanded");
+                }
+            }
+        }
+
+        function activateBookmark(){
+            bookmarks=document.querySelectorAll("svg.bookmark");
+            for(var i=0; i<bookmarks.length;i++){
+                bookmarks[i].onclick=function(){
+                    console.log(this.id.concat(" clicked"));
+                    $.ajax({
+                        url: "{% url 'tradeboard-home' %}",
+                        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                        method: "POST",
+                        data: {
+                            "action": "bookmark",
+                            "pk": this.id.substring(4)
+                        },
+                        success: function(resp){
+                            bkm = document.getElementById(('bkm-'+resp['pk']))
+                            if (resp.bookmarked) {
+                                bkm.classList.toggle("bookmarked", true);
+                            }
+                            else{
+                                bkm.classList.toggle("bookmarked", false);
+                            }
+                        }, error: function(error){
+                            console.log("error detected with bookmark button activation")
+                            console.log(error)
+                        }
+                    })
+                }
+            }
+        }
+
+        function activate(){
+            activateBookmark()
+            activateExpand()
+        }
+
+        function confirmPopUp(action,post,confirmed=false){
+            console.log("confirmPopUp clicked")
+            console.log("action =", action)
+            console.log("post id =", post)
+            if(confirmed){
+                $.ajax({
+                    url: "{% url 'tradeboard-home' %}",
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    method: "POST",
+                    data: {
+                        'action':action,
+                        'post':post
+                    },
+                    success: function (resp) {
+                        console.log(resp)
+                        loadSellList()
+                        removePopUp()
+                    },
+                    error: function(error) {
+                        console.log("error detected with confirmation popup")
+                        console.log(error)
+                    }
+                });
+            }
+            else{
+                pop = document.querySelectorAll(".popup")
+                html = "<div class='pop-box'><p class='prompt'> Are you sure?</p><div class='arrange-as-row'><button class='yes' onclick='confirmPopUp("+'"'+action+'"'+","+post+","+true+")'>Confirm</button><button class='no' onclick='removePopUp()'>Cancel</button></div></div>"
+                pop[0].innerHTML=html;
+                pop[0].classList.toggle("visible")
+                panels = document.querySelectorAll(".panels")
+                panels[0].classList.toggle("blurred")
+            }
+            
+        }
+
+        function removePopUp(){
+            pop = document.querySelectorAll(".popup")
+            pop[0].classList.toggle("remove",true)
+            setTimeout(() => { 
+                pop = document.querySelectorAll(".popup")
+                pop[0].innerHTML=""
+                pop[0].classList.toggle("visible", false)
+                pop[0].classList.toggle("remove", false)
+                panels = document.querySelectorAll(".panels")
+                panels[0].classList.toggle("blurred", false)
+             }, 150);
+        }
+
+        function submitForm(){
+            switchTab("tradeboard");
+            var frm = $('.search-filters');
+            frm = frm.serialize()
+            console.log(frm)
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: frm,
+                success: function (resp) {
+                    console.log("reponse recieved")
+                    $('.mid-panel-scroll').html(resp.searchResults);
+                    $('.search-filters-panel').html(resp.form);
+                    activate()
+                },
+                error: function(resp) {
+                    console.log("submit form error")
+                    $('.search-filters-panel').html(resp.responseText);
+                }
+            });
+        }
+
+        function newPostForm(confirmed=false){
+            console.log("ne post form called")
+            if(confirmed){
+                options = {
+                    url: "{% url 'tradeboard-home' %}",
+                    type: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    success: function(resp) {
+                        console.log(resp)
+                        loadSellList()
+                        removePopUp()
+                    },
+                    error: function(resp) {
+                        console.log(resp)
+                        pop = document.querySelectorAll(".popup")
+                        pop[0].innerHTML=resp.responseText;
+                    }
+                };
+
+                $('#new-post-form').ajaxSubmit(options);
+                console.log("confirmed new post function called")
+            }
+            else{
+                $.ajax({
+                    url: "{% url 'tradeboard-home' %}",
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    method: "POST",
+                    data: {
+                        'action':'get-new-post-form'
+                    },
+                    success: function (resp) {
+                        pop = document.querySelectorAll(".popup")
+                        pop[0].innerHTML=resp;
+                        pop[0].classList.toggle("visible")
+                        panels = document.querySelectorAll(".panels")
+                        panels[0].classList.toggle("blurred")
+                    },
+                    error: function(data) {
+
+                    }
+                });
+            }
+        }
+
+        function editPostForm(post, confirmed=false){
+            console.log(confirmed)
+            if(confirmed){
+                options = {
+                    url: "{% url 'tradeboard-home' %}",
+                    type: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    success: function(resp) {
+                        console.log(resp)
+                        loadSellList()
+                        removePopUp()
+                    },
+                    error: function(resp) {
+                        console.log(resp)
+                        pop = document.querySelectorAll(".popup")
+                        pop[0].innerHTML=resp.responseText;
+                    }
+                };
+
+                $('#edit-post-form').ajaxSubmit(options);
+                console.log("confirmed edit post function called")
+            }
+            else{
+                $.ajax({
+                    url: "{% url 'tradeboard-home' %}",
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    method: "POST",
+                    data: {
+                        'action':'get-edit-post-form',
+                        'post':post,
+                    },
+                    success: function (resp) {
+                        pop = document.querySelectorAll(".popup")
+                        pop[0].innerHTML=resp;
+                        pop[0].classList.toggle("visible")
+                        panels = document.querySelectorAll(".panels")
+                        panels[0].classList.toggle("blurred")
+                    },
+                    error: function(data) {
+
+                    }
+                });
+            }
+        }
+
+        function clearForm(){
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: {
+                    'action':'clear'
+                },
+                success: function (resp) {
+                    console.log("clearform() response recieved")
+                    $('.search-filters-panel').html(resp);
+                    loadTradeboard()
+                    activate()
+                },
+                error: function(data) {
+                    console.log("reponse not recieved - submit form error")
+                }
+            });
+        }
+
+        function initialize() {
+            console.log("initialize"),
+            $.ajax({
+                url: "{% url 'tradeboard-home' %}",
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                method: "POST",
+                data: {
+                    "action": "initialize"
+                },
+                success: function(resp){
+                    console.log("Initialize success, response recieved from server");
+                    $('.mid-panel-scroll').html(resp);
+                    activate()
+                }, error: function(error){
+                    console.log("error");
+                    console.log(error);
+                }
+            })
+        }
+        initialize();
+    </script>
+
+{% endblock %}
